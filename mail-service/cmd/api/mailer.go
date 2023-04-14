@@ -87,7 +87,7 @@ func (m *Mail) SendSMTPMessage(msg Message) error {
 
 	err = email.Send(smtpClient)
 	if err != nil {
-		log.Println("Colud not sent message to smtp")
+		log.Println("Colud not send message to smtp")
 		return err
 	}
 
