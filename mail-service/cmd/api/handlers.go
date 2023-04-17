@@ -15,9 +15,9 @@ func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var requestPayload mailMessage
-
 	err := app.readJSON(w, r, &requestPayload)
 	if err != nil {
+		log.Println("SendMail_ReadJsonErr", err)
 		app.errorJSON(w, err)
 		return
 	}
@@ -40,6 +40,6 @@ func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
 		Error:   false,
 		Message: "sent to " + requestPayload.To,
 	}
-
+	log.Println("SendMailPayload", payload)
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
