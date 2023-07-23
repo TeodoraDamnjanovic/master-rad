@@ -17,6 +17,12 @@
 		},
 		{
 			"path": "listener-service"
+		},
+		{
+			"path": "order-service"
+		},
+		{
+			"path": "payment-service"
 		}
 	]
 }

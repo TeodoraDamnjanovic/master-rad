@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 )
 
@@ -82,10 +83,11 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		app.errorJSON(w, errors.New("invalid credentials"))
+		app.errorJSON(w, errors.New("login - invalid credentials"))
 		return
 	} else if response.StatusCode != http.StatusAccepted {
-		app.errorJSON(w, errors.New("error calling auth service"))
+		log.Printf("login  %+v\n", a)
+		app.errorJSON(w, errors.New("login - error calling auth service"))
 		return
 	}
 
@@ -112,7 +114,7 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 
 func (app *Config) signup(w http.ResponseWriter, a UserPayload) {
 	jsonData, _ := json.MarshalIndent(a, "", "\t")
-
+	log.Printf("signup  %+v\n", a)
 	request, err := http.NewRequest("POST", "http://authentication-service/signup", bytes.NewBuffer(jsonData))
 	if err != nil {
 		app.errorJSON(w, err)
@@ -129,7 +131,8 @@ func (app *Config) signup(w http.ResponseWriter, a UserPayload) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusAccepted {
-		app.errorJSON(w, errors.New("error calling auth service"))
+		log.Printf("Signup user error %+v\n", response)
+		app.errorJSON(w, errors.New("signup - error calling auth service"))
 		return
 	}
 
