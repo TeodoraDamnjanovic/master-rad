@@ -39,6 +39,19 @@ services:
     environment:
       DSN: "host=postgres port=5432 user=postgres password=password dbname=orderservicedb sslmode=disable timezone=UTC connect_timeout=5"
 
+  payment-service:
+      build:
+        context: ./../payment-service
+        dockerfile: ./../payment-service/payment-service.dockerfile
+      restart: always
+      ports:
+        - "8083:80"
+      deploy:
+        mode: replicated
+        replicas: 1
+      environment:
+        DSN: "host=postgres port=5432 user=postgres password=password dbname=paymentservicedb sslmode=disable timezone=UTC connect_timeout=5"
+
   postgres:
     image: 'postgres:14.2'
     ports:

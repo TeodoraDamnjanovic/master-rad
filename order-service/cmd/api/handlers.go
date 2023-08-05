@@ -10,9 +10,9 @@ import (
 )
 
 type Order struct {
-	UserId    int       `json:"user-id"`
-	CreatedAt time.Time `json:"created-at"`
-	InvoiceId string    `json:"invoice-id"`
+	UserId    int       `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	InvoiceId string    `json:"invoice_id"`
 	Paid      bool      `json:"paid"`
 	Amount    int       `json:"amount"`
 }
@@ -81,7 +81,7 @@ func (app *Config) updateOrder(w http.ResponseWriter, r *http.Request) {
 
 	payload := jsonResponse{
 		Error:   false,
-		Message: fmt.Sprintf("Order with id %s is created!", order.ID),
+		Message: fmt.Sprintf("Order with id %d is created!", order.ID),
 		Data:    order,
 	}
 

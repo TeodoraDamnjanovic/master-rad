@@ -6,13 +6,16 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type RequestPayload struct {
-	Action string      `json:"action"`
-	Auth   AuthPayload `json:"auth,omitempty"`
-	User   UserPayload `json:"user,omitempty"`
-	Mail   MailPayload `json:"mail,omitempty"`
+	Action  string         `json:"action"`
+	Auth    AuthPayload    `json:"auth,omitempty"`
+	User    UserPayload    `json:"user,omitempty"`
+	Mail    MailPayload    `json:"mail,omitempty"`
+	Order   OrderPayload   `json:"order,omitempty"`
+	Payment PaymentPayload `json:"payment,omitempty"`
 }
 
 type MailPayload struct {
@@ -32,6 +35,18 @@ type UserPayload struct {
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 	Password  string `json:"password"`
+}
+
+type OrderPayload struct {
+	UserId    int    `json:"user_id"`
+	InvoiceId string `json:"invoice_id"`
+	Paid      bool   `json:"paid"`
+	Amount    int    `json:"amount"`
+}
+
+type PaymentPayload struct {
+	UserId int     `json:"user_id"`
+	Amount float64 `json:"amount"`
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +74,14 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		app.signup(w, requestPayload.User)
 	case "mail":
 		app.sendMail(w, requestPayload.Mail)
+	case "create-order":
+		app.createOrder(w, requestPayload.Order)
+	case "create-payment":
+		app.createPayment(w, requestPayload.Payment)
+	case "get-payments":
+		app.getPayments(w, requestPayload.Payment)
+	case "balance":
+		app.getBalance(w, requestPayload.Payment)
 	default:
 		app.errorJSON(w, errors.New("unknown action"))
 	}
@@ -189,4 +212,184 @@ func (app *Config) sendMail(w http.ResponseWriter, msg MailPayload) {
 	payload.Message = "Mail has been sent to " + msg.To
 
 	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) createOrder(w http.ResponseWriter, o OrderPayload) {
+	jsonData, _ := json.MarshalIndent(o, "", "\t")
+
+	request, err := http.NewRequest("POST", "http://order-service/create-order", bytes.NewBuffer(jsonData))
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		log.Printf("Create order request failed %+v\n", o)
+		app.errorJSON(w, errors.New("create order - error calling order service"))
+		return
+	}
+
+	var jsonFromService jsonResponse
+
+	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	if jsonFromService.Error {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "Order created"
+	payload.Data = jsonFromService.Data
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) createPayment(w http.ResponseWriter, p PaymentPayload) {
+	jsonData, _ := json.MarshalIndent(p, "", "\t")
+
+	request, err := http.NewRequest("POST", "http://payment-service/payment", bytes.NewBuffer(jsonData))
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		log.Printf("Create payment request failed %+v\n", p)
+		app.errorJSON(w, errors.New("create payment - error calling payment service"))
+		return
+	}
+
+	var jsonFromService jsonResponse
+
+	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	if jsonFromService.Error {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "Payment created"
+	payload.Data = jsonFromService.Data
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) getBalance(w http.ResponseWriter, p PaymentPayload) {
+
+	url := "http://payment-service/payment/" + strconv.Itoa(p.UserId) + "/balance"
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		log.Printf("Get balance request failed %+v\n", p)
+		app.errorJSON(w, errors.New("get balance - error calling apyment service"))
+		return
+	}
+
+	var jsonFromService jsonResponse
+
+	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	if jsonFromService.Error {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "Palance retreived"
+	payload.Data = jsonFromService.Data
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) getPayments(w http.ResponseWriter, p PaymentPayload) {
+	url := "http://payment-service/payment/" + strconv.Itoa(p.UserId)
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		log.Printf("Get payments for user id %+v request failed \n", p.UserId)
+		app.errorJSON(w, errors.New("get payments - error calling payment service"))
+		return
+	}
+
+	var jsonFromService jsonResponse
+
+	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	if jsonFromService.Error {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "Balance retreived"
+	payload.Data = jsonFromService.Data
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+
 }
