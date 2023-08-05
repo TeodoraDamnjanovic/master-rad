@@ -5,6 +5,7 @@ AUTH_BINARY=authApp
 MAIL_BINARY=mailerApp
 LISTENER_BINARY=listenerApp
 ORDER_BINARY=orderApp
+PAYMENT_BINARY=paymentApp
 ## up: starts all containers in the background without forcing build
 up:
 	@echo Starting Docker images...
@@ -12,7 +13,7 @@ up:
 	@echo Docker images started!
 
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-up_build: build_broker build_auth build_mail build_listener build_order
+up_build: build_broker build_auth build_mail build_listener build_order build_payment
 	@echo Stopping docker images (if running...)
 	docker-compose down
 	@echo Building (when required) and starting docker images...
@@ -49,10 +50,16 @@ build_listener:
 	chdir ..\listener-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${LISTENER_BINARY} .
 	@echo Done!
 
-## build_listener: builds the listener binary as a linux executable
+## build_order: builds the order binary as a linux executable
 build_order:
 	@echo Building order binary...
 	chdir ..\order-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${ORDER_BINARY} ./cmd/api
+	@echo Done!
+
+## build_payment: builds the payment binary as a linux executable
+build_payment:
+	@echo Building payment binary...
+	chdir ..\payment-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${PAYMENT_BINARY} ./cmd/api
 	@echo Done!
 
 ## build_front: builds the frone end binary
