@@ -1,13 +1,11 @@
-SHELL=/bin/bash
-FRONT_END_BINARY=frontApp
+SHELL=cmd.exe
+FRONT_END_BINARY=frontApp.exe
 BROKER_BINARY=brokerApp
 AUTH_BINARY=authApp
 MAIL_BINARY=mailerApp
 LISTENER_BINARY=listenerApp
 ORDER_BINARY=orderApp
 PAYMENT_BINARY=paymentApp
-LOGGER_BINARY=loggerApp
-
 ## up: starts all containers in the background without forcing build
 up:
 	@echo Starting Docker images...
@@ -16,9 +14,9 @@ up:
 
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
 up_build: build_broker build_auth build_mail build_listener build_logger build_order build_payment
-	@echo Stopping docker images \(if running...\)
+	@echo Stopping docker images (if running...)
 	docker-compose down
-	@echo Building \(when required\) and starting docker images...
+	@echo Building (when required) and starting docker images...
 	docker-compose up --build -d
 	@echo Docker images built and started!
 
@@ -31,58 +29,57 @@ down:
 ## build_broker: builds the broker binary as a linux executable
 build_broker:
 	@echo Building broker binary...
-	cd ../broker-service && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${BROKER_BINARY} ./cmd/api
+	chdir ..\broker-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${BROKER_BINARY} ./cmd/api
 	@echo Done!
 
 ## build_mail: builds the mail binary as a linux executable
 build_mail:
 	@echo Building mail binary...
-	cd ../mail-service && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${MAIL_BINARY} ./cmd/api
+	chdir ..\mail-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${MAIL_BINARY} ./cmd/api
 	@echo Done!
 
 ## build_auth: builds the auth binary as a linux executable
 build_auth:
 	@echo Building auth binary...
-	cd ../authentication-service && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${AUTH_BINARY} ./cmd/api
+	chdir ..\authentication-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${AUTH_BINARY} ./cmd/api
 	@echo Done!
 
 ## build_listener: builds the listener binary as a linux executable
 build_listener:
 	@echo Building listener binary...
-	cd ../listener-service && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${LISTENER_BINARY} .
+	chdir ..\listener-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${LISTENER_BINARY} .
 	@echo Done!
 
 ## build_logger: builds the logger binary as a linux executable
 build_logger:
-	@echo Building logger binary...
-	cd ../logger-service && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${LOGGER_BINARY} ./cmd/api
-	@echo Done!
-
+	@echo "Building logger binary..."
+	cd ../logger-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOGGER_BINARY} ./cmd/api
+	@echo "Done!"
 ## build_order: builds the order binary as a linux executable
 build_order:
 	@echo Building order binary...
-	cd ../order-service && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${ORDER_BINARY} ./cmd/api
+	chdir ..\order-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${ORDER_BINARY} ./cmd/api
 	@echo Done!
 
 ## build_payment: builds the payment binary as a linux executable
 build_payment:
 	@echo Building payment binary...
-	cd ../payment-service && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${PAYMENT_BINARY} ./cmd/api
+	chdir ..\payment-service && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${PAYMENT_BINARY} ./cmd/api
 	@echo Done!
 
-## build_front: builds the front end binary
+## build_front: builds the frone end binary
 build_front:
 	@echo Building front end binary...
-	cd ../front-end && CGO_ENABLED=0 GOOS=linux go build -o ${FRONT_END_BINARY} ./cmd/web
+	chdir ..\front-end && set CGO_ENABLED=0&& set GOOS=windows&& go build -o ${FRONT_END_BINARY} ./cmd/web
 	@echo Done!
 
 ## start: starts the front end
 start: build_front
-	@echo Starting front end...
-	cd ../front-end && ./${FRONT_END_BINARY} &
+	@echo Starting front end
+	chdir ..\front-end && start /B ${FRONT_END_BINARY} &
 
 ## stop: stop the front end
 stop:
 	@echo Stopping front end...
-	pkill -f ${FRONT_END_BINARY}
-	@echo Stopped front end!
+	@taskkill /IM "${FRONT_END_BINARY}" /F
+	@echo "Stopped front end!"

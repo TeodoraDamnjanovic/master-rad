@@ -6,12 +6,14 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/rpc"
 	"strconv"
 )
 
 type RequestPayload struct {
 	Action  string         `json:"action"`
 	Auth    AuthPayload    `json:"auth,omitempty"`
+	Log     LogPayload     `json:"log,omitempty"`
 	User    UserPayload    `json:"user,omitempty"`
 	Mail    MailPayload    `json:"mail,omitempty"`
 	Order   OrderPayload   `json:"order,omitempty"`
@@ -28,6 +30,11 @@ type MailPayload struct {
 type AuthPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type LogPayload struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
 }
 
 type UserPayload struct {
@@ -74,6 +81,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		app.signup(w, requestPayload.User)
 	case "mail":
 		app.sendMail(w, requestPayload.Mail)
+	case "log":
+		app.logItemViaRPC(w, requestPayload.Log)
 	case "create-order":
 		app.createOrder(w, requestPayload.Order)
 	case "create-payment":
@@ -392,4 +401,35 @@ func (app *Config) getPayments(w http.ResponseWriter, p PaymentPayload) {
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 
+}
+
+type RPCPayload struct {
+	Name string
+	Data string
+}
+
+func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
+	client, err := rpc.Dial("tcp", "logger-service:5001")
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	rpcPayload := RPCPayload{
+		Name: l.Name,
+		Data: l.Data,
+	}
+
+	var result string
+	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	payload := jsonResponse{
+		Error:   false,
+		Message: result,
+	}
+
+	app.writeJSON(w, http.StatusOK, payload)
 }
