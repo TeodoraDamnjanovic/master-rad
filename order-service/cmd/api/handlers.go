@@ -28,6 +28,7 @@ func (app *Config) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create order
 	order := data.Order{
 		UserId:    requestPayload.UserId,
 		CreatedAt: requestPayload.CreatedAt,
@@ -35,14 +36,30 @@ func (app *Config) createOrder(w http.ResponseWriter, r *http.Request) {
 		Paid:      requestPayload.Paid,
 		Amount:    requestPayload.Amount,
 	}
+	order.Status = "created"
+	log.Printf("CreateOrder %+v\n", order)
+	orderId, err := app.insertOrder(order)
 
-	orderId, err := app.Models.Order.Insert(order)
+	order.ID = orderId
 
 	if err != nil {
 		log.Printf("CreateOrder_Insert %+v\n", err)
 		app.errorJSON(w, errors.New("CreateOrder_Insert failed"), http.StatusInternalServerError)
 		return
 	}
+
+	// Process payment
+	err = processPayment(order)
+
+	if err != nil {
+		log.Printf("CreateOrder_ProcessPayment failed %+v\n", err)
+		// Compensation action: cancel order
+		app.cancelOrder(order)
+		http.Error(w, "Payment service failed", http.StatusInternalServerError)
+		return
+	}
+
+	app.completeOrder(order)
 
 	payload := jsonResponse{
 		Error:   false,
@@ -86,4 +103,45 @@ func (app *Config) updateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) cancelOrder(order data.Order) error {
+	// Update order table with status cancelled
+	order.Status = "cancelled"
+
+	log.Printf("CancelOrder %+v\n", order)
+
+	err := app.Models.Order.UpdateOrderStatus(order.ID, order.Status, order.Paid)
+	if err != nil {
+		log.Printf("CancelOrder_Update %+v\n", err)
+		return err
+	}
+	return nil
+}
+
+func (app *Config) completeOrder(order data.Order) error {
+	// Update order table with status completed
+	order.Status = "completed"
+	order.Paid = true
+	err := app.Models.Order.UpdateOrderStatus(order.ID, order.Status, order.Paid)
+	if err != nil {
+		log.Printf("CompleteOrder_Update %+v\n", err)
+		return err
+	}
+	return nil
+}
+
+func (app *Config) insertOrder(order data.Order) (int, error) {
+	orderId, err := app.Models.Order.Insert(order)
+
+	return orderId, err
+}
+
+func (app *Config) updateOrderStatus(order data.Order) error {
+	err := app.Models.Order.UpdateOrderStatus(order.ID, order.Status, order.Paid)
+	if err != nil {
+		log.Printf("UpdateOrderStatus_UpdateOrderStatus %+v\n", err)
+		return err
+	}
+	return nil
 }

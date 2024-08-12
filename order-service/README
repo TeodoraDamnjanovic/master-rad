@@ -1,0 +1,24 @@
+
+# Copy sql script into docker container
+
+docker cp orders.sql your_postgres_container:/orders.sql
+
+# Execute script
+
+docker exec -it your_postgres_container psql -U postgres -d orderservicedb -f /orders.sql
+
+# Connect to postgres
+
+docker exec -it your_postgres_container psql -U postgres
+
+# Connect to orderservicedb
+
+docker exec -it your_postgres_container psql -U postgres -d orderservicedb
+
+
+# List all tables
+
+\dt
+
+# Select data from the orders table
+SELECT * FROM public.orders;
