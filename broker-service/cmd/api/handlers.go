@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/rpc"
 	"strconv"
+	"time"
 )
 
 type RequestPayload struct {
@@ -419,16 +421,33 @@ func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
 		Data: l.Data,
 	}
 
-	var result string
-	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
+	var totalTime time.Duration
+	requestCount := 1000
+
+	for i := 0; i < requestCount; i++ {
+		start := time.Now()
+
+		var result string
+		err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+		if err != nil {
+			app.errorJSON(w, err)
+			return
+		}
+		elapsed := time.Since(start)
+		totalTime += elapsed
+
+		if (i+1)%100 == 0 {
+			log.Printf("Request %d took %s", i+1, elapsed)
+		}
+
 	}
+
+	avgTime := totalTime / time.Duration(requestCount)
+	log.Printf("Average gRPC request time: %s", avgTime)
 
 	payload := jsonResponse{
 		Error:   false,
-		Message: result,
+		Message: fmt.Sprintf("Average gRPC request time: %s\n", avgTime),
 	}
 
 	app.writeJSON(w, http.StatusOK, payload)
