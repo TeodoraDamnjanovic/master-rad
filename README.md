@@ -1,14 +1,14 @@
 # master-rad
 
-Microservices Communication Patterns
+# Microservices Communication Patterns
 
-Overview
+## Overview
 
 This repository contains a set of microservices demonstrating different communication patterns in a microservices architecture. The project explores synchronous and asynchronous communication, including blocking and non-blocking approaches. It leverages technologies such as gRPC and RabbitMQ for inter-service communication.
 
 This implementation is based on research conducted for a master's thesis on "Communication Patterns in Microservices Architecture," covering different patterns like synchronous blocking, asynchronous non-blocking, event-driven communication, and message brokering.
 
-Tech Stack
+## Tech Stack
 
 Programming Language: Go (Golang)
 
@@ -18,15 +18,11 @@ Message Broker: RabbitMQ
 
 RPC Protocol: gRPC
 
-Frontend: [If applicable, specify frontend tech]
-
 Databases: PostgreSQL, MongoDB
 
 Containerization: Docker & Docker Compose
 
-Orchestration: [Specify if Kubernetes is used]
-
-Microservices
+## Microservices
 
 This project includes the following services:
 
@@ -46,7 +42,7 @@ Order Service - Manages order creation and processing.
 
 Payment Service - Handles payment transactions.
 
-Communication Patterns Demonstrated
+## Communication Patterns Demonstrated
 
 Synchronous Blocking Communication: gRPC-based service calls with request-response patterns.
 
@@ -58,22 +54,22 @@ Data Consistency Strategies: Two-phase commit (2PC) and Saga pattern.
 
 Installation & Running Locally
 
-Prerequisites
+## Prerequisites
 
 Docker & Docker Compose
 
 Protobuf Compiler
 
-Setup
+## Setup
 
-# Clone the repository
+## Clone the repository
 git clone https://github.com/TeodoraDamnjanovic/your-repo.git
 cd your-repo
 
-# Start services using Docker Compose
+## Start services using Docker Compose
 docker-compose up --build
 
-Testing
+## Testing
 
 gRPC calls can be tested using tools like Postman, BloomRPC, or grpcurl.
 
