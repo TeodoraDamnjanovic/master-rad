@@ -10,51 +10,51 @@ This implementation is based on research conducted for a master's thesis on "Com
 
 ## Tech Stack
 
-Programming Language: Go (Golang)
+**Programming Language:** Go (Golang)
 
-Frameworks & Libraries: gRPC, Protocol Buffers (Protobuf)
+**Frameworks & Libraries:** gRPC, Protocol Buffers (Protobuf)
 
-Message Broker: RabbitMQ
+**Message Broker:** RabbitMQ
 
-RPC Protocol: gRPC
+**RPC Protocol:** gRPC
 
-Databases: PostgreSQL, MongoDB
+**Databases:** PostgreSQL, MongoDB
 
-Containerization: Docker & Docker Compose
+**Containerization:** Docker & Docker Compose
 
 ## Microservices
 
 This project includes the following services:
 
-Authentication Service - Handles user authentication and authorization.
+**Authentication Service** - Handles user authentication and authorization.
 
-Broker Service - Acts as a message broker between services.
+**Broker Service** - Acts as a message broker between services.
 
-Frontend - Client-side application for interacting with microservices.
+**Frontend** - Client-side application for interacting with microservices.
 
-Listener Service - Listens to events and routes them accordingly.
+**Listener Service** - Listens to events and routes them accordingly.
 
-Logger Service - Implements gRPC-based remote procedure calls for logging.
+**Logger Service** - Implements gRPC-based remote procedure calls for logging.
 
-Mail Service - Handles email notifications asynchronously.
+**Mail Service** - Handles email notifications asynchronously.
 
-Order Service - Manages order creation and processing.
+**Order Service** - Manages order creation and processing.
 
-Payment Service - Handles payment transactions.
+**Payment Service** - Handles payment transactions.
 
 ## Communication Patterns Demonstrated
 
-Synchronous Blocking Communication: gRPC-based service calls with request-response patterns.
+**Synchronous Blocking Communication:** gRPC-based service calls with request-response patterns.
 
-Asynchronous Non-Blocking Communication: Implemented using RabbitMQ message queues.
+**Asynchronous Non-Blocking Communication:** Implemented using RabbitMQ message queues.
 
-Event-Driven Communication: Decoupling services using message brokering.
+**Event-Driven Communication:** Decoupling services using message brokering.
 
-Data Consistency Strategies: Two-phase commit (2PC) and Saga pattern.
+**Data Consistency Strategies:** Two-phase commit (2PC) and Saga pattern.
 
-Installation & Running Locally
+## Installation & Running Locally
 
-## Prerequisites
+Prerequisites
 
 Docker & Docker Compose
 
@@ -62,9 +62,10 @@ Protobuf Compiler
 
 ## Setup
 
-## Clone the repository
-git clone https://github.com/TeodoraDamnjanovic/your-repo.git
-cd your-repo
+Clone the repository
+
+git clone https://github.com/TeodoraDamnjanovic/master-rad.git
+cd master-rad
 
 ## Start services using Docker Compose
 docker-compose up --build
