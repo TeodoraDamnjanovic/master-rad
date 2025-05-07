@@ -3,15 +3,16 @@ package main
 import (
 	"broker-service/logs"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/rpc"
 	"strconv"
 	"time"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -89,6 +90,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		app.sendMail(w, requestPayload.Mail)
 	case "log":
 		app.logItemViaRPC(w, requestPayload.Log)
+	case "log-grpc":
+		app.LogViaGRPC(w, requestPayload.Log)
 	case "create-order":
 		app.createOrder(w, requestPayload.Order)
 	case "create-payment":
@@ -415,73 +418,112 @@ type RPCPayload struct {
 }
 
 func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
-	client, err := rpc.Dial("tcp", "logger-service:5001")
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
 	rpcPayload := RPCPayload{
 		Name: l.Name,
 		Data: l.Data,
 	}
 
-	var result string
-	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	client, err := rpc.Dial("tcp", "logger-service:5001")
 	if err != nil {
 		app.errorJSON(w, err)
 		return
 	}
+	defer client.Close()
+
+	var totalTime time.Duration
+	requestCount := 1000
+
+	for i := 0; i < requestCount; i++ {
+		var result string
+
+		start := time.Now()
+
+		err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+		if err != nil {
+			app.errorJSON(w, err)
+			return
+		}
+
+		elapsed := time.Since(start)
+		totalTime += elapsed
+
+		if (i+1)%100 == 0 {
+			log.Printf("Request %d took %s", i+1, elapsed)
+		}
+	}
+
+	avgTime := totalTime / time.Duration(requestCount)
+	log.Printf("Average RPC request time: %s", avgTime)
 
 	payload := jsonResponse{
 		Error:   false,
-		Message: result,
+		Message: fmt.Sprintf("Average RPC request time: %s\n", avgTime),
 	}
 
 	app.writeJSON(w, http.StatusOK, payload)
 }
 
-// Handler to handle gRPC calls
-func (app *Config) LogViaGRPC(w http.ResponseWriter, r *http.Request) {
-	var requestPayload RequestPayload
+type gRPCPayload struct {
+	Name string
+	Data string
+}
 
-	err := app.readJSON(w, r, &requestPayload)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
+// Handler to handle gRPC calls
+func (app *Config) LogViaGRPC(w http.ResponseWriter, l LogPayload) {
+
+	grpcPayload := gRPCPayload{
+		Name: l.Name,
+		Data: l.Data,
 	}
 
-	// Define the gRPC dial options
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	// Use grpc.NewClient with the server address and options
-	conn, err := grpc.NewClient("dns:///logger-service:5001", opts...)
+	conn, err := grpc.NewClient("dns:///logger-service:50001", opts...)
 	if err != nil {
 		app.errorJSON(w, err)
 		return
 	}
 	defer conn.Close()
 
-	c := logs.NewLogServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	client := logs.NewLogServiceClient(conn)
 
-	_, err = c.WriteLog(ctx, &logs.LogRequest{
-		LogEntry: &logs.Log{
-			Name: requestPayload.Log.Name,
-			Data: requestPayload.Log.Data,
-		},
-	})
+	var totalTime time.Duration
+	requestCount := 1000
 
-	if err != nil {
-		app.errorJSON(w, err)
-		return
+	for i := 0; i < requestCount; i++ {
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		start := time.Now()
+
+		_, err = client.WriteLog(ctx, &logs.LogRequest{
+			LogEntry: &logs.Log{
+				Name: grpcPayload.Name,
+				Data: grpcPayload.Data,
+			},
+		})
+
+		if err != nil {
+			app.errorJSON(w, err)
+			return
+		}
+
+		elapsed := time.Since(start)
+		totalTime += elapsed
+
+		if (i+1)%100 == 0 {
+			log.Printf("Request %d took %s", i+1, elapsed)
+		}
 	}
+	avgTime := totalTime / time.Duration(requestCount)
+	log.Printf("Average gRPC request time: %s", avgTime)
 
 	var payload jsonResponse
 	payload.Error = false
-	payload.Message = "logged"
+	payload.Message = fmt.Sprintf("Average gRPC request time: %s", avgTime)
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 }

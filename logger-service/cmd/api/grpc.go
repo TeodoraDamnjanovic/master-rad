@@ -44,7 +44,7 @@ func (app *Config) gRPCListen() {
 	s := grpc.NewServer()
 	logs.RegisterLogServiceServer(s, &LogServer{Models: app.Models})
 
-	log.Printf("Listening on port: %s", gRpcPort)
+	log.Printf("Starting gRPC server on port: %s", gRpcPort)
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
